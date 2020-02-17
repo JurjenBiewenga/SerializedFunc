@@ -1,0 +1,18 @@
+{
+  "name": "com.jb.serialized-func",
+  "version": "1.0.0",
+  "displayName": "SerializedFunc",
+  "description": "SerializedFunc implements a serialized variant of the C# `func` which allows you to cache a reference to a method with a return value.",
+  "unity": "2019.3",
+  "dependencies": {
+ },
+ "keywords": [
+    "Func",
+    "Serialized",
+    "SerializedFunc"
+  ],
+  "author": {
+    "name": "Jurjen Biewenga",
+    "url": "https://www.jurjenbiewenga.com"
+  }
+}
