@@ -5,13 +5,13 @@ using Object = UnityEngine.Object;
 
 namespace SerializedFunc
 {
-    [System.Serializable]
+    [Serializable]
     public class EventCall
     {
         [SerializeField]
         private Object targetObject;
         [SerializeField]
-        private string functionName;
+        private string functionName = default;
         
         private MethodInfo methodInfo;
 
