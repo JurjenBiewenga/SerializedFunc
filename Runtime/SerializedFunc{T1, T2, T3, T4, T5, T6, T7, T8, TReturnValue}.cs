@@ -44,6 +44,11 @@ namespace SerializedFuncImpl
         }
 
         /// <summary>
+        /// Gets the amount of expected parameters
+        /// </summary>
+        protected virtual int ExpectedParameters { get; } = 8;
+
+        /// <summary>
         /// Overwrites the current function
         /// </summary>
         /// <param name="target">The target object</param>
@@ -121,15 +126,18 @@ namespace SerializedFuncImpl
         /// </summary>
         /// <param name="methodInfo">The method info</param>
         /// <exception cref="ArgumentException">Thrown when an invalid method info was passed</exception>
-        private static void ValidateMethodInfo(MethodInfo methodInfo)
+        private void ValidateMethodInfo(MethodInfo methodInfo)
         {
             if (!methodInfo.ReturnType.IsAssignableFrom(typeof(TReturnValue)))
                 throw new ArgumentException("Incorrect return type", nameof(methodInfo));
 
             var parameters = methodInfo.GetParameters();
+            
+            if(parameters.Length != ExpectedParameters)
+                throw new ArgumentException("Invalid parameter count");
 
             if (parameters.Length > 0 && !parameters[0].ParameterType.IsAssignableFrom(typeof(T1)))
-                throw new ArgumentException("Incorrect first parameters", nameof(methodInfo));
+                throw new ArgumentException("Incorrect first parameter", nameof(methodInfo));
 
             if (parameters.Length > 1 && !parameters[1].ParameterType.IsAssignableFrom(typeof(T2)))
                 throw new ArgumentException("Incorrect second parameters", nameof(methodInfo));

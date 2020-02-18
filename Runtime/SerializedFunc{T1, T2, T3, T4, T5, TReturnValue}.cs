@@ -14,6 +14,12 @@ namespace SerializedFuncImpl
     /// <typeparam name="TReturnValue">The return type</typeparam>
     public class SerializedFunc<T1, T2, T3, T4, T5, TReturnValue> : SerializedFunc<T1, T2, T3, T4, T5, object, object, object, TReturnValue>
     {
+        /// <inheritdoc />
+        protected override int ExpectedParameters
+        {
+            get => 5;
+        }
+        
         /// <summary>
         /// Invokes the saved function
         /// </summary>

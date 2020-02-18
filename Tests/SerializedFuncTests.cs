@@ -37,17 +37,35 @@ namespace SerializedFuncImpl.Tests
         }
 
         [TestCase("test")]
-        public void Test(string value)
+        public void SetMethodInfoTest(string value)
         {
             var serializedFunc = new SerializedFunc<string, string>();
-            var method = typeof(TestSO).GetMethod("Test");
-            var testSo = ScriptableObject.CreateInstance<TestSO>();
+            var method = typeof(TestSo).GetMethod("Test");
+            var testSo = ScriptableObject.CreateInstance<TestSo>();
             serializedFunc.Set(testSo, method);
-            
+
             Assert.AreEqual(serializedFunc.Invoke(value), value);
         }
 
-        class TestSO : ScriptableObject
+        [TestCase()]
+        public void IncorrectParametersCountTest()
+        {
+            var serializedFunc = new SerializedFunc<string, string, string>();
+            var method = typeof(TestSo).GetMethod("Test");
+            var testSo = ScriptableObject.CreateInstance<TestSo>();
+            Assert.Throws<ArgumentException>(() => serializedFunc.Set(testSo, method), "Invalid parameter count");
+        }
+        
+        [TestCase]
+        public void IncorrectParametersTest()
+        {
+            var serializedFunc = new SerializedFunc<bool, string>();
+            var method = typeof(TestSo).GetMethod("Test");
+            var testSo = ScriptableObject.CreateInstance<TestSo>();
+            Assert.Throws<ArgumentException>(() => serializedFunc.Set(testSo, method), "Incorrect first parameter");
+        }
+
+        class TestSo : ScriptableObject
         {
             public string Test(string val1)
             {

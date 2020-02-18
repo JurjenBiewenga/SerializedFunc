@@ -9,6 +9,12 @@ namespace SerializedFuncImpl
     /// <typeparam name="TReturnValue">The return type</typeparam>
     public class SerializedFunc<TReturnValue> : SerializedFunc<object, object, object, object, object, object, object, object, TReturnValue>
     {
+        /// <inheritdoc />
+        protected override int ExpectedParameters
+        {
+            get => 0;
+        }
+        
         /// <summary>
         /// Invokes the function
         /// </summary>
