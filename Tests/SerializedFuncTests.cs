@@ -4,7 +4,7 @@ using NUnit.Framework;
 using UnityEditor.VersionControl;
 using UnityEngine;
 
-namespace SerializedFunc.Tests
+namespace SerializedFuncImpl.Tests
 {
     public class SerializedFuncTests
     {

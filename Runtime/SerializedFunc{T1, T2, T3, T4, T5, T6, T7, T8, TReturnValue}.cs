@@ -5,12 +5,30 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace SerializedFunc
+namespace SerializedFuncImpl
 {
+    /// <summary>
+    /// Generic implementation with 8 generic parameters
+    /// </summary>
+    /// <typeparam name="T1">Type 1</typeparam>
+    /// <typeparam name="T2">Type 2</typeparam>
+    /// <typeparam name="T3">Type 3</typeparam>
+    /// <typeparam name="T4">Type 4</typeparam>
+    /// <typeparam name="T5">Type 5</typeparam>
+    /// <typeparam name="T6">Type 6</typeparam>
+    /// <typeparam name="T7">Type 7</typeparam>
+    /// <typeparam name="T8">Type 8</typeparam>
+    /// <typeparam name="TReturnValue">The return type</typeparam>
     public class SerializedFunc<T1, T2, T3, T4, T5, T6, T7, T8, TReturnValue> : SerializedFunc
     {
+        /// <summary>
+        /// The runtime function or null if not set
+        /// </summary>
         private Delegate runtimeFunc;
 
+        /// <summary>
+        /// Gets the runtime function or null if not set
+        /// </summary>
         protected Delegate RuntimeFunc
         {
             get
@@ -25,17 +43,37 @@ namespace SerializedFunc
             set => runtimeFunc = value;
         }
 
-        public TReturnValue Invoke(T1 val1, T2 val2, T3 val3, T4 val4, T5 val5, T6 val6, T7 val7, T8 val8)
+        /// <summary>
+        /// Overwrites the current function
+        /// </summary>
+        /// <param name="target">The target object</param>
+        /// <param name="methodInfo">The method to replace it with</param>
+        public void Set(UnityEngine.Object target, MethodInfo methodInfo)
         {
-            return InvokeInternal(val1, val2, val3, val4, val5, val6, val7, val8);
+            ValidateMethodInfo(methodInfo);
+
+            MethodReference = new SerializedMethodReference(target, methodInfo);
+            CreateRuntimeFunc();
         }
 
+        /// <summary>
+        /// Invokes the saved function
+        /// </summary>
+        /// <param name="val1">Value 1</param>
+        /// <param name="val2">Value 2</param>
+        /// <param name="val3">Value 3</param>
+        /// <param name="val4">Value 4</param>
+        /// <param name="val5">Value 5</param>
+        /// <param name="val6">Value 6</param>
+        /// <param name="val7">Value 7</param>
+        /// <param name="val8">Value 8</param>
+        /// <returns>The return value of the function</returns>
         protected TReturnValue InvokeInternal(T1 val1, T2 val2, T3 val3, T4 val4, T5 val5, T6 val6, T7 val7, T8 val8)
         {
             if (RuntimeFunc != null)
             {
                 var count = runtimeFunc.Method.GetParameters().Length;
-                if(!runtimeFunc.Method.IsHideBySig)
+                if (!runtimeFunc.Method.IsHideBySig)
                     count -= 1;
 
                 if (count == 0)
@@ -69,19 +107,20 @@ namespace SerializedFunc
             return default;
         }
 
+        /// <summary>
+        /// Overwrites the current function
+        /// </summary>
+        /// <param name="func">The new function</param>
         protected void SetInternal(Delegate func)
         {
             runtimeFunc = func;
         }
 
-        protected void SetInternal(UnityEngine.Object target, MethodInfo methodInfo)
-        {
-            ValidateMethodInfo(methodInfo);
-
-            Call = new EventCall(target, methodInfo);
-            CreateRuntimeFunc();
-        }
-
+        /// <summary>
+        /// Validates the parameters and return value of the given method info
+        /// </summary>
+        /// <param name="methodInfo">The method info</param>
+        /// <exception cref="ArgumentException">Thrown when an invalid method info was passed</exception>
         private static void ValidateMethodInfo(MethodInfo methodInfo)
         {
             if (!methodInfo.ReturnType.IsAssignableFrom(typeof(TReturnValue)))
@@ -114,34 +153,30 @@ namespace SerializedFunc
                 throw new ArgumentException("Incorrect eight parameters", nameof(methodInfo));
         }
 
+        /// <summary>
+        /// Creates a delegate from the <see cref="SerializedMethodReference"/> field
+        /// </summary>
         private void CreateRuntimeFunc()
         {
-            if (Call?.MethodInfo != null)
+            if (MethodReference?.MethodInfo != null)
             {
-                if (Call.MethodInfo.IsStatic)
-                {
-                    runtimeFunc = CreateDelegate(Call.TargetObject, Call.MethodInfo);
-                    // runtimeFunc = (Func<T1, T2, T3, T4, T5, T6, T7, T8, TReturnValue>) Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, TReturnValue>),
-                    //     Call.MethodInfo);
-                }
-                else
-                {
-                    runtimeFunc = CreateDelegate(Call.TargetObject, Call.MethodInfo);
-                    // runtimeFunc = (Func<T1, T2, T3, T4, T5, T6, T7, T8, TReturnValue>) Delegate.CreateDelegate(Call.MethodInfo.,
-                    //     Call.TargetObject,
-                    //     Call.MethodInfo.Name);
-                }
+                runtimeFunc = CreateDelegate(MethodReference.TargetObject, MethodReference.MethodInfo);
             }
         }
 
-
-        public static Delegate CreateDelegate(object instance, MethodInfo method)
+        /// <summary>
+        /// Creates a delegate from the <paramref name="target"/> and <paramref name="method"/>
+        /// </summary>
+        /// <param name="target">The target object</param>
+        /// <param name="method">The method</param>
+        /// <returns>The created delegate</returns>
+        private static Delegate CreateDelegate(object target, MethodInfo method)
         {
             var parameters = method.GetParameters()
                 .Select(p => Expression.Parameter(p.ParameterType, p.Name))
                 .ToArray();
 
-            var call = Expression.Call(Expression.Constant(instance), method, parameters);
+            var call = Expression.Call(Expression.Constant(target), method, parameters);
             return Expression.Lambda(call, parameters).Compile();
         }
     }

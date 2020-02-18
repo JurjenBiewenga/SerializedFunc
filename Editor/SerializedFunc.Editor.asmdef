@@ -1,3 +1,15 @@
-﻿{
-	"name": "SerializedFunc.Editor"
+{
+    "name": "SerializedFunc.Editor",
+    "references": [
+        "GUID:16aae2827f6fc22468a53f8b204f5bec"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

@@ -1,25 +1,41 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-namespace SerializedFunc
+namespace SerializedFuncImpl
 {
+    /// <summary>
+    /// Base class for the serialized func implementation
+    /// </summary>
+    /// <remarks>Mostly needed for custom editor needs</remarks>
     [Serializable]
     public abstract class SerializedFunc
     {
+        /// <summary>
+        /// The method reference
+        /// </summary>
         [SerializeField, HideInInspector]
-        private EventCall eventCall;
+        private SerializedMethodReference methodReference;
 
-        protected EventCall Call
+        /// <summary>
+        /// The method reference
+        /// </summary>
+        protected SerializedMethodReference MethodReference
         {
-            get => eventCall;
-            set => eventCall = value;
+            get => methodReference;
+            set => methodReference = value;
         }
 
+        /// <summary>
+        /// Invokes the method from the <see cref="methodReference"/> if not null
+        /// </summary>
+        /// <param name="parameters">The parameters to pass</param>
+        /// <returns>The value returned by <see cref="methodReference"/> or null</returns>
         protected object Invoke(params object[] parameters)
         {
-            if (Call != null && Call.MethodInfo != null)
+            if (MethodReference != null && MethodReference.MethodInfo != null)
             {
-                return Call.MethodInfo.Invoke(Call.TargetObject, parameters);
+                return MethodReference.MethodInfo.Invoke(MethodReference.TargetObject, parameters);
             }
 
             return null;
