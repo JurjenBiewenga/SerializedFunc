@@ -159,9 +159,7 @@ namespace SerializedFuncImpl.Editor
 
             foreach (MethodInfo method in methods)
             {
-                ParameterInfo[] parameters = method.GetParameters();
-             
-                bool success = IsReturnValueValid(method, genericArguments) && DoParametersMatchArguments(parameters, genericArguments);
+                bool success = IsValidMethod(method, genericArguments);
                 
                 if (success)
                 {
@@ -174,15 +172,28 @@ namespace SerializedFuncImpl.Editor
             
             return foundMethods;
         }
-     
+
+        /// <summary>
+        /// Checks whether the given <paramref name="method"/> is valid
+        /// </summary>
+        /// <param name="method">The method</param>
+        /// <param name="genericArguments">The arguments to check</param>
+        /// <returns>Whether it is valid</returns>
+        private static bool IsValidMethod(MethodInfo method, IReadOnlyList<Type> genericArguments)
+        {
+            return IsReturnValueValid(method, genericArguments) && DoParametersMatchArguments(method, genericArguments);
+        }
+
         /// <summary>
         /// Checks whether the parameters match the generic arguments
         /// </summary>
-        /// <param name="parameters">The parameters</param>
+        /// <param name="method">The method to check</param>
         /// <param name="genericArguments">The generic arguments</param>
         /// <returns>Whether it was a valid match</returns>
-        private static bool DoParametersMatchArguments(ParameterInfo[] parameters, IReadOnlyList<Type> genericArguments)
+        private static bool DoParametersMatchArguments(MethodInfo method, IReadOnlyList<Type> genericArguments)
         {
+            ParameterInfo[] parameters = method.GetParameters();
+
             if (genericArguments.Count - 1 != parameters.Length)
                 return false;
             
