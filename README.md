@@ -2,6 +2,8 @@
 
 SerializedFunc allows you to define C# `func<TReturnValue>` and assign them in the Unity Editor.
 
+This package is available as package manager package. Please see [here](https://docs.unity3d.com/Manual/upm-git.html) for installation instructions.
+
 ![Showcase of editor integration](https://raw.githubusercontent.com/JurjenBiewenga/SerializedFunc/master/Images/Assignment.gif)
 
 # Usage
