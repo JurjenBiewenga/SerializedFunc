@@ -68,8 +68,12 @@ namespace SerializedFuncImpl.Editor
                     });
                 }
 
-                if (menu.GetItemCount() > 0)
-                    menu.DropDown(rect);
+                if (menu.GetItemCount() == 0)
+                {
+                    menu.AddDisabledItem(new GUIContent("No matching methods found"));
+                }
+                
+                menu.DropDown(rect);
             }
         }
 
