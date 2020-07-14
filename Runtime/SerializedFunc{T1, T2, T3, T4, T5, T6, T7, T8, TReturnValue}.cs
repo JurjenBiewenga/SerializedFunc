@@ -168,7 +168,14 @@ namespace SerializedFuncImpl
         {
             if (MethodReference?.MethodInfo != null)
             {
-                runtimeFunc = CreateDelegate(MethodReference.TargetObject, MethodReference.MethodInfo);
+                if (MethodReference.MethodInfo.IsStatic)
+                {
+                    runtimeFunc = CreateDelegate(null, MethodReference.MethodInfo);
+                }
+                else
+                {
+                    runtimeFunc = CreateDelegate(MethodReference.TargetObject, MethodReference.MethodInfo);
+                }
             }
         }
 
@@ -184,7 +191,12 @@ namespace SerializedFuncImpl
                 .Select(p => Expression.Parameter(p.ParameterType, p.Name))
                 .ToArray();
 
-            var call = Expression.Call(Expression.Constant(target), method, parameters);
+            MethodCallExpression call;
+            if (target != null)
+                call = Expression.Call(Expression.Constant(target), method, parameters);
+            else
+                call = Expression.Call(method, parameters);
+            
             return Expression.Lambda(call, parameters).Compile();
         }
     }

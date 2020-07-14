@@ -21,7 +21,7 @@ namespace SerializedFuncImpl.Tests
         public void ReturnSimpleValueTypeNoParamsTest(int value)
         {
             var serializedFunc = new SerializedFunc<string, int>();
-            serializedFunc.Set((x) => value);
+            serializedFunc.Set(x => value);
 
             Assert.AreEqual(serializedFunc.Invoke("test"), value);
         }

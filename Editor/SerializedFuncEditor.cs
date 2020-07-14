@@ -29,20 +29,52 @@ namespace SerializedFuncImpl.Editor
             var funcCall = property.FindPropertyRelative("methodReference");
             var target = funcCall.FindPropertyRelative("targetObject");
             var functionName = funcCall.FindPropertyRelative("methodName");
+            var invokeStaticCall = funcCall.FindPropertyRelative("invokeStatic");
+            var serializedTypeCall = funcCall.FindPropertyRelative("targetType");
+            var typeAssemblyName = serializedTypeCall.FindPropertyRelative("assemblyQualifiedName");
+            var paramTypes = funcCall.FindPropertyRelative("paramTypes");
 
-            CalculateRects(position, out Rect labelRect, out Rect objectRect, out Rect funcRect);
+            CalculateRects(position, out Rect switchRect, out Rect labelRect, out Rect objectRect, out Rect funcRect);
 
-            GUI.Label(labelRect, label);
-            
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.PropertyField(objectRect, target, new GUIContent());
-            if (EditorGUI.EndChangeCheck())
+            if (GUI.Button(switchRect, new GUIContent("*", "Switch modes")))
             {
-                functionName.stringValue = string.Empty;
-                matchingMethods = null;
+                invokeStaticCall.boolValue = !invokeStaticCall.boolValue;
+                ResetSelectedFunction(functionName);
             }
 
-            DrawMethodSelection(property, funcRect, functionName, target.objectReferenceValue);
+            GUI.Label(labelRect, label);
+
+            EditorGUI.BeginChangeCheck();
+            if (invokeStaticCall.boolValue)
+            {
+                EditorGUI.PropertyField(objectRect, serializedTypeCall, new GUIContent());
+            }
+            else
+            {
+                EditorGUI.PropertyField(objectRect, target, new GUIContent());
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                ResetSelectedFunction(functionName);
+            }
+
+            if ((target.objectReferenceValue == null && !invokeStaticCall.boolValue) || (string.IsNullOrWhiteSpace(typeAssemblyName.stringValue) && invokeStaticCall.boolValue))
+                GUI.enabled = false;
+            DrawMethodSelection(property,
+                funcRect,
+                functionName,
+                paramTypes,
+                target.objectReferenceValue,
+                SerializableSystemType.GetSystemType(typeAssemblyName.stringValue),
+                invokeStaticCall.boolValue);
+            GUI.enabled = true;
+        }
+
+        private void ResetSelectedFunction(SerializedProperty functionName)
+        {
+            functionName.stringValue = string.Empty;
+            matchingMethods = null;
         }
 
         /// <summary>
@@ -52,18 +84,33 @@ namespace SerializedFuncImpl.Editor
         /// <param name="rect">The rect to draw in</param>
         /// <param name="functionName">The function name serialized property</param>
         /// <param name="target">The target object</param>
-        private void DrawMethodSelection(SerializedProperty property, Rect rect, SerializedProperty functionName, Object target)
+        /// <param name="invokeStatic">Whether it is set to invoke static mode</param>
+        private void DrawMethodSelection(SerializedProperty property, Rect rect, SerializedProperty functionName, SerializedProperty paramTypes, Object target, Type staticType, bool invokeStatic)
         {
             GUISkin skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector);
             if (GUI.Button(rect, functionName.stringValue, skin.GetStyle("DropDownButton")))
             {
                 GenericMenu menu = new GenericMenu();
-                List<MethodInfo> list = GetMatchingMethods(target);
+                List<MethodInfo> list = GetMatchingMethods(target, staticType, invokeStatic);
                 foreach (MethodInfo method in list)
                 {
                     menu.AddItem(new GUIContent(method.Name), false, () =>
                     {
                         functionName.stringValue = method.Name;
+                        paramTypes.ClearArray();
+                        var parameters = method.GetParameters();
+                        for (var i = 0; i < parameters.Length; i++)
+                        {
+                            paramTypes.InsertArrayElementAtIndex(i);
+                            var elem = paramTypes.GetArrayElementAtIndex(i);
+                            var assemblyQualifiedName = elem.FindPropertyRelative("assemblyQualifiedName");
+                            var nameProperty = elem.FindPropertyRelative("name");
+                            var assemblyName = elem.FindPropertyRelative("assemblyName");
+                            assemblyQualifiedName.stringValue = parameters[0].ParameterType.AssemblyQualifiedName;
+                            nameProperty.stringValue = parameters[0].ParameterType.Name;
+                            assemblyName.stringValue = parameters[0].ParameterType.FullName;
+                        }
+
                         property.serializedObject.ApplyModifiedProperties();
                     });
                 }
@@ -72,7 +119,7 @@ namespace SerializedFuncImpl.Editor
                 {
                     menu.AddDisabledItem(new GUIContent("No matching methods found"));
                 }
-                
+
                 menu.DropDown(rect);
             }
         }
@@ -81,24 +128,27 @@ namespace SerializedFuncImpl.Editor
         /// Calculates the rects used to draw the label, object field, and the method selection
         /// </summary>
         /// <param name="position">The space available to draw in</param>
+        /// <param name="switchRect">The calculated rect for the switch button</param>
         /// <param name="labelRect">The calculated rect for the label</param>
         /// <param name="objectRect">The calculated rect for the object field</param>
         /// <param name="selectionRect">The calculated rect for the method selection</param>
-        private static void CalculateRects(Rect position, out Rect labelRect, out Rect objectRect, out Rect selectionRect)
+        private static void CalculateRects(Rect position, out Rect switchRect, out Rect labelRect, out Rect objectRect, out Rect selectionRect)
         {
             if (EditorGUIUtility.wideMode)
             {
-                float dividedWidth = position.width / 3;
-                labelRect = new Rect(position.x, position.y, dividedWidth, position.height);
-                objectRect = new Rect(position.x + dividedWidth, position.y, dividedWidth, position.height);
-                selectionRect = new Rect(position.x + dividedWidth * 2, position.y, dividedWidth, position.height);
+                float dividedWidth = (position.width - 15) / 3;
+                switchRect = new Rect(position.x, position.y, 15, position.height);
+                labelRect = new Rect(position.x + 15, position.y, dividedWidth, position.height);
+                objectRect = new Rect(labelRect.x + dividedWidth, position.y, dividedWidth, position.height);
+                selectionRect = new Rect(objectRect.x + dividedWidth, position.y, dividedWidth, position.height);
             }
             else
             {
-                float dividedWidth = position.width / 2;
+                float dividedWidth = (position.width - 15) / 2;
                 labelRect = new Rect(position.x, position.y, dividedWidth, EditorGUIUtility.singleLineHeight);
-                objectRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight, dividedWidth, EditorGUIUtility.singleLineHeight);
-                selectionRect = new Rect(position.x + dividedWidth, position.y, dividedWidth, EditorGUIUtility.singleLineHeight);
+                switchRect = new Rect(position.x, position.y, 15, position.height);
+                objectRect = new Rect(position.x + 15, position.y + EditorGUIUtility.singleLineHeight, dividedWidth, EditorGUIUtility.singleLineHeight);
+                selectionRect = new Rect(objectRect.x + dividedWidth, position.y, dividedWidth, EditorGUIUtility.singleLineHeight);
             }
         }
 
@@ -106,8 +156,9 @@ namespace SerializedFuncImpl.Editor
         /// Gets the matching methods that are available in the <paramref name="target"/>
         /// </summary>
         /// <param name="target">The target</param>
+        /// <param name="invokeStatic">Whether it is set to invoke static mode</param>
         /// <returns>The matching methods</returns>
-        private List<MethodInfo> GetMatchingMethods(Object target)
+        private List<MethodInfo> GetMatchingMethods(Object target, Type staticType, bool invokeStatic)
         {
             if (matchingMethods != null)
             {
@@ -117,18 +168,22 @@ namespace SerializedFuncImpl.Editor
             matchingMethods = new List<MethodInfo>();
 
             Type t = fieldInfo.FieldType.BaseType;
-            matchingMethods = FindMatchingMethodsForType(target, t) ?? new List<MethodInfo>();
+            if(!invokeStatic)
+                matchingMethods = FindMatchingMethodsForType(target.GetType(), t, invokeStatic) ?? new List<MethodInfo>();
+            else
+                matchingMethods = FindMatchingMethodsForType(staticType, t, invokeStatic) ?? new List<MethodInfo>();
 
             return matchingMethods;
         }
 
         /// <summary>
-        /// Tries to find the methods for the given <paramref name="type"/> in <paramref name="targetObject"/>
+        /// Tries to find the methods for the given <paramref name="type"/> in <paramref name="targetType"/>
         /// </summary>
-        /// <param name="targetObject">The target object</param>
+        /// <param name="targetType">The target type</param>
         /// <param name="type">The type</param>
+        /// <param name="invokeStatic">Whether it is set to invoke static mode</param>
         /// <returns>Returns the found methods or null if none are found</returns>
-        private List<MethodInfo> FindMatchingMethodsForType(Object targetObject, Type type)
+        private List<MethodInfo> FindMatchingMethodsForType(Type targetType, Type type, bool invokeStatic)
         {
             if (type != null)
             {
@@ -139,8 +194,16 @@ namespace SerializedFuncImpl.Editor
 
                 var genericArguments = type.GetGenericArguments();
 
-                Type targetType = targetObject.GetType();
-                MethodInfo[] methods = targetType.GetMethods();
+                MethodInfo[] methods = null;
+                if (invokeStatic)
+                {
+                    methods = targetType.GetMethods(BindingFlags.Static | BindingFlags.Public);
+                }
+                else
+                {
+                    methods = targetType.GetMethods();
+                }
+
                 return FilterMethods(methods, genericArguments);
             }
 
@@ -160,7 +223,7 @@ namespace SerializedFuncImpl.Editor
             foreach (MethodInfo method in methods)
             {
                 bool success = IsValidMethod(method, genericArguments);
-                
+
                 if (success)
                 {
                     foundMethods.Add(method);
@@ -169,7 +232,7 @@ namespace SerializedFuncImpl.Editor
 
             if (foundMethods.Count == 0)
                 return null;
-            
+
             return foundMethods;
         }
 
@@ -196,7 +259,7 @@ namespace SerializedFuncImpl.Editor
 
             if (genericArguments.Count - 1 != parameters.Length)
                 return false;
-            
+
             for (var i = 0; i < parameters.Length; i++)
             {
                 ParameterInfo parameterInfo = parameters[i];

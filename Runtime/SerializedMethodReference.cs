@@ -16,12 +16,27 @@ namespace SerializedFuncImpl
         /// </summary>
         [SerializeField]
         private Object targetObject;
+
+        /// <summary>
+        /// The type to invoke a static call on
+        /// </summary>
+        [SerializeField]
+        private SerializableSystemType targetType = null;
+
+        [SerializeField]
+        private bool invokeStatic = false;
         
         /// <summary>
         /// The function name
         /// </summary>
         [SerializeField]
         private string methodName = default;
+
+        /// <summary>
+        /// The types of the parameters
+        /// </summary>
+        [SerializeField]
+        private SerializableSystemType[] paramTypes;
         
         /// <summary>
         /// The method info
@@ -37,10 +52,48 @@ namespace SerializedFuncImpl
             {
                 if (methodInfo == null)
                 {
-                    Type t = TargetObject.GetType();
-                    methodInfo = t.GetMethod(MethodName);
+                    InitializeMethodInfo();
                 }
+
                 return methodInfo;
+            }
+        }
+
+        private void InitializeMethodInfo()
+        {
+            Type t = TargetObject.GetType();
+            MethodInfo[] methods;
+            if (invokeStatic)
+            {
+                methods = t.GetMethods(BindingFlags.Static | BindingFlags.Public);
+            }
+            else
+            {
+                methods = t.GetMethods();
+            }
+            foreach (MethodInfo method in methods)
+            {
+                if (method.Name == methodName)
+                {
+                    var parameters = method.GetParameters();
+                    if (parameters.Length == paramTypes.Length)
+                    {
+                        bool failed = false;
+                        for (var i = 0; i < parameters.Length; i++)
+                        {
+                            if (parameters[i].ParameterType != paramTypes[i].SystemType)
+                            {
+                                failed = true;
+                                break;
+                            }
+                        }
+
+                        if (!failed)
+                        {
+                            methodInfo = method;
+                        }
+                    }
+                }
             }
         }
 
@@ -58,6 +111,22 @@ namespace SerializedFuncImpl
         public Object TargetObject
         {
             get => targetObject;
+        }
+
+        /// <summary>
+        /// The target type to invoke on
+        /// </summary>
+        public Type TargetType
+        {
+            get => this.targetType?.SystemType;
+        }
+
+        /// <summary>
+        /// Whether to invoke the method statically 
+        /// </summary>
+        public bool InvokeStatic
+        {
+            get => invokeStatic;
         }
 
         /// <summary>
